@@ -5,43 +5,54 @@ import numpy as np
 
 class KmeansPP:
     """
-    KMeans++ clustering initialization.
+    Implementation of the KMeans++ initialization algorithm for clustering.
 
-    This class implements the KMeans++ algorithm for initializing cluster centroids.
-    The KMeans++ initialization improves the speed of convergence and reduces
-    the chances of poor clustering compared to random initialization.
+    KMeans++ is an improved method for selecting the initial centroids for the KMeans
+    algorithm. It increases the likelihood of faster convergence and reduces the chances
+    of poor clustering due to unlucky random initialization.
 
-    Attributes:
-        n_clusters (int): Number of clusters to initialize.
-        rng (np.random.Generator): NumPy random number generator, seeded for reproducibility.
+    Attributes
+    ----------
+    n_clusters : int
+        Number of centroids (clusters) to initialize.
+    metric : {'euclidean', 'chebyshev'}
+        Distance metric used to compute distances between points and centroids.
+    rng : np.random.Generator
+        NumPy random number generator initialized with a given seed for reproducibility.
     """
 
     def __init__(
             self,
             n_clusters: int = 2,
-            metric: Literal['euclidean', 'chebyshev', 'manhattan'] = 'chebyshev',
+            metric: Literal['euclidean', 'chebyshev'] = 'chebyshev',
             random_state: int | None = None
     ):
         self.n_clusters = n_clusters
         self.metric = metric
         self.rng = np.random.default_rng(random_state)
 
-    def initialize_centroids(self, X: np.ndarray, /) -> np.ndarray:
+    def initialize_centroids(self, X: np.ndarray) -> np.ndarray:
         """
         Initialize centroids using the KMeans++ algorithm.
 
-        Args:
-            X (np.ndarray): Input data of shape (n_samples, n_features).
+        Parameters
+        ----------
+        X : np.ndarray
+            Input dataset of shape (n_samples, n_features).
 
-        Returns:
-            np.ndarray: Initialized centroids of shape (n_clusters, n_features).
+        Returns
+        -------
+        np.ndarray
+            Array of initialized centroids of shape (n_clusters, n_features).
 
-        Algorithm:
-            1. Select the first centroid randomly from the data points.
+        Notes
+        -----
+        The KMeans++ initialization algorithm works as follows:
+            1. Choose the first centroid randomly from the data points.
             2. For each remaining centroid:
                 a. Compute squared distances from each point to the nearest existing centroid.
                 b. Compute probabilities proportional to these distances.
-                c. Select a new centroid according to the computed probabilities.
+                c. Select a new centroid according to these probabilities.
         """
         n = X.shape[0]
         centroids = np.zeros((self.n_clusters, X.shape[1]))
@@ -53,21 +64,26 @@ class KmeansPP:
             centroids[i] = X[new_cen_ind].copy()
         return centroids
 
-    def __calculate_probability(self, X: np.ndarray, centroids: np.ndarray, /) -> np.ndarray:
+    def __calculate_probability(self, X: np.ndarray, centroids: np.ndarray) -> np.ndarray:
         """
-        Compute probability of each sample to be selected as the next centroid.
+        Compute the probability of each sample being chosen as the next centroid.
 
-        Args:
-            X (np.ndarray): Input data of shape (n_samples, n_features).
-            centroids (np.ndarray): Current centroids of shape (current_clusters, n_features).
+        Parameters
+        ----------
+        X : np.ndarray
+            Input dataset of shape (n_samples, n_features).
+        centroids : np.ndarray
+            Current centroids of shape (current_clusters, n_features).
 
-        Returns:
-            np.ndarray: Probabilities for each data point, summing to 1.
+        Returns
+        -------
+        np.ndarray
+            Array of probabilities for each point, summing to 1.
 
-        Notes:
-            - The probability for each point is proportional to the squared distance
-              to its nearest existing centroid.
-            - A small epsilon (1e-12) is added to prevent division by zero.
+        Notes
+        -----
+        - Each probability is proportional to the squared distance to the nearest existing centroid.
+        - A small epsilon (1e-12) is added to prevent division by zero.
         """
         dist_sq = cdist(X, centroids, metric=self.metric)
         min_dist_sq = dist_sq.min(axis=1)
